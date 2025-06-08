@@ -1,0 +1,102 @@
+version: "3.9"
+services:
+  app:
+    build:
+      args:
+        user: sammy
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: istw-apps-img
+    container_name: app_app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./src/:/var/www
+    networks:
+      - app_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: app_nginx
+    restart: unless-stopped
+    ports:
+      - 91:80
+    volumes:
+      - ./src/:/var/www
+      - ./nginx:/etc/nginx/conf.d/
+    networks:
+      - app_network
+    depends_on:
+      - app
+      # - redis
+
+  horizon:
+    image: istw-apps-img
+    container_name: app_horizon
+    volumes:
+      - ./src:/var/www
+      - ./supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
+      - ./supervisor/supervisor-horizon.conf:/etc/supervisor/conf.d/horizon.conf
+    working_dir: /etc/supervisor/conf.d
+    networks:
+      - app_network
+    depends_on:
+      - app
+    command: ["supervisord","-c","/etc/supervisor/conf.d/horizon.conf"]
+
+  schedule-worker:
+    image: istw-apps-img
+    container_name: app_schedule_worker
+    volumes:
+      - ./src:/var/www
+      - ./supervisor/supervisord.conf:/etc/supervisor/supervisord.conf
+      - ./supervisor/supervisor-schedule.conf:/etc/supervisor/conf.d/schedule.conf
+    working_dir: /etc/supervisor/conf.d
+    networks:
+      - app_network
+    depends_on:
+      - app
+    command: ["supervisord","-c","/etc/supervisor/conf.d/schedule.conf"]
+
+
+  # queue:
+  #   image: istw-webapp
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - app
+  #   volumes:
+  #     - ./src/:/var/www/
+  #   ## for the queue worker, we use the same image, but run 
+  #   ## artisan queue:work
+  #   entrypoint: php /var/www/html/artisan queue:work --verbose --tries=3 --timeout=60
+
+  # scheduler:
+  #   image: istw-webapp
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - app
+  #   ## for the scheduler we use an infinite while loop
+  #   entrypoint: sh -c "while true; do php /var/www/html/artisan schedule:run --verbose & sleep 60; done"
+
+  # redis:
+  #   image: redis:6
+  #   container_name: redis
+  #   restart: unless-stopped
+  #   ## enable this for development
+  #   ports:
+  #     - 6379:6379   
+  #   # expose:
+  #   #   - 6379
+  #   networks:
+  #     - app_network
+  #   volumes:
+  #     - redis-data:/data
+
+networks:
+  app_network:
+    driver: bridge
+
+# volumes:
+#   redis-data:
+#     driver: local
