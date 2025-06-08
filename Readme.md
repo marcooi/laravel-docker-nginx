@@ -1,6 +1,41 @@
 - Clone Repository  
      `git clone https://github.com/marcooi/laravel-docker-2.git `
 
+- Change this based on your preference
+
+    == app:  ==
+    image: istw-apps-img
+    container_name: app_container
+     networks:
+      - app_network
+
+    == NGINX: ==
+    container_name: app_nginx
+     ports:
+      - 91:80
+     networks:
+      - app_network
+
+    == horizon: ==
+    image: istw-apps-img
+    container_name: app_horizon
+    networks:
+      - app_network
+    depends_on:
+      - app
+    
+    == schedule-worker: ==
+    image: istw-apps-img
+    container_name: app_schedule_worker
+    networks:
+      - app_network
+
+    networks:
+        app_network:
+
+- Build image
+    ` docker compose build --no-cache `
+
 - Set Permission 
     <!-- ` sudo chown -R 1000:1000 ./src ` -->
 
@@ -24,39 +59,18 @@
      `cd ..`  
 
 - run docker compose  
-     `docker-compose up --build -d`     
+     ` docker compose up -d `     
 
 - masuk ke console container 
-    ` docker-compose exec app bash `
+    ` docker compose exec app bash `
 
 
 - install and run composer   
-     <!-- `docker-compose exec app composer update --optimize-autoloader --no-dev`   -->
-     `docker-compose exec app composer install --optimize-autoloader --no-dev`  
-     `docker-compose exec app php artisan key:generate`  
-     `docker-compose exec app composer dump-autoload`  
-     `docker-compose exec app php artisan horizon:publish`
+     ` composer install --optimize-autoloader --no-dev `  
+     ` php artisan migrate `
+     ` php artisan key:generate `
+     ` composer dump-autoload `
+     ` php artisan storage:link` 
 
-     `docker-compose exec app php artisan cache:forget spatie.permission.cache` 
-     `docker-compose exec app php artisan cache:clear` 
-
-     <!-- `docker-compose exec app php artisan cache:clear`  
-     `docker-compose exec app php artisan config:cache`   
-     `docker-compose exec app php artisan route:cache`  
-     `docker-compose exec app php artisan view:cache`   -->
-     
-     `docker exec -it app_app php artisan optimize:clear` 
-     `docker exec -it app_app php artisan route:cache`  
-     `docker exec -it app_app php artisan config:cache` 
-     `docker exec -it app_app php artisan view:cache` 
-     `docker exec -it app_app php artisan storage:link` 
-
-     `docker exec -it app_app php artisan view:cache` 
-
-     <!-- `docker exec -it app php artisan optimize:clear` 
-     `docker exec -it app php artisan optimize`  -->
-     
-
-     <!-- `docker run --rm -v $(pwd):/app composer/composer install` -->
      
 
